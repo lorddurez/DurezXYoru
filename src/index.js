@@ -5,9 +5,13 @@
 
 import { Bot } from 'grammy';
 import { config, isOwner } from './config.js';
-import { ownerImmune, mentionsYoru, isBetrayalAttempt, filterOwnerTitles } from './core/middleware.js';
-import { isDisabled } from './core/health.js';
+import {
+  ownerImmune,
+  mentionsYoru,
+  isBetrayalAttempt,
+} from './core/middleware.js';
 import { loadPlugins } from './core/loader.js';
+import { respond } from './ai/respond.js';
 
 const bot = new Bot(config.botToken);
 
@@ -55,24 +59,37 @@ bot.on('message:text', async (ctx, next) => {
   // skip commands — they're handled by their own handlers
   if (text.startsWith('/')) return next();
 
+  // ── Betrayal detection — DM owner, cold reply
   if (isBetrayalAttempt(text)) {
-    // DM the owner silently
     try {
       await bot.api.sendMessage(
         config.ownerId,
-        `⚠️ possible betrayal attempt\nfrom: ${ctx.from.first_name} (@${ctx.from.username ?? 'no-username'})\nchat: ${ctx.chat.type}\nmessage: "${text}"`
+        `⚠️ possible betrayal attempt\n` +
+          `from: ${ctx.from.first_name} (@${ctx.from.username ?? 'no-username'})\n` +
+          `chat: ${ctx.chat.type}\n` +
+          `message: "${text}"`
       );
-    } catch {}
-    // Yoru responds cold
+    } catch (_) {}
+
     if (mentionsYoru(text)) {
       return ctx.reply(`don't say that about ${config.ownerName}.`);
     }
     return next();
   }
 
+  // ── Name trigger — real AI reply
   if (mentionsYoru(text)) {
-    // placeholder reply — real AI wiring comes in Drop 3
-    return ctx.reply(`hm? what do you want.`);
+    try {
+      const { text: replyText } = await respond(ctx, {
+        mood: config.defaultMood,
+      });
+      return ctx.reply(replyText, {
+        reply_to_message_id: ctx.message.message_id,
+      });
+    } catch (err) {
+      console.error('[TRIGGER] respond failed:', err.message);
+      return ctx.reply(`...`);
+    }
   }
 
   return next();
@@ -91,6 +108,8 @@ console.log(`♡ ${config.botName} is waking up...`);
 console.log(`   owner: ${config.ownerName} (${config.ownerId})`);
 console.log(`   mood:  ${config.defaultMood}`);
 console.log(`   home:  ${config.homeGroupLink}`);
+
 await bot.start({
-  onStart: (info) => console.log(`♡ ${config.botName} is live as @${info.username}`),
+  onStart: (info) =>
+    console.log(`♡ ${config.botName} is live as @${info.username}`),
 });
