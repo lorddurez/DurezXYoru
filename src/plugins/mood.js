@@ -29,4 +29,43 @@ export async function register(bot) {
 
     const arg = ctx.match?.trim().toLowerCase();
 
-    if (!
+    if (!arg) {
+      const current = getGroupMood(ctx.chat.id);
+      const list = Object.keys(MOODS).join(', ');
+      return ctx.reply(`current mood: ${current}\navailable: ${list}`);
+    }
+
+    if (!MOODS[arg]) {
+      return ctx.reply(`no such mood: "${arg}"`);
+    }
+
+    setGroupMood(ctx.chat.id, arg);
+    return ctx.reply(`mood set to ${arg}.`);
+  });
+
+  // ── /moods — list all
+  bot.command('moods', async (ctx) => {
+    const list = Object.entries(MOODS)
+      .map(([name]) => `• ${name}`)
+      .join('\n');
+    return ctx.reply(`available moods:\n${list}`);
+  });
+
+  // ── /moodall <name> — owner only
+  bot.command('moodall', async (ctx) => {
+    if (!isOwner(ctx.from.id)) return;
+    const arg = ctx.match?.trim().toLowerCase();
+    if (!MOODS[arg]) return ctx.reply(`no such mood: "${arg}"`);
+    for (const id of groupMoods.keys()) setGroupMood(id, arg);
+    return ctx.reply(`mood forced to ${arg} in ${groupMoods.size} group(s).`);
+  });
+}
+
+async function isGroupAdmin(ctx) {
+  try {
+    const member = await ctx.api.getChatMember(ctx.chat.id, ctx.from.id);
+    return ['administrator', 'creator'].includes(member.status);
+  } catch {
+    return false;
+  }
+}
