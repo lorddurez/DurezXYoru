@@ -1,12 +1,13 @@
 // ═══════════════════════════════════════════════════
-// YORU — MAIN ENTRY
-// Boots the bot, registers middleware, loads plugins, starts polling.
+// YORU — MAIN ENTRY (FINAL)
+// Boots the bot, registers middleware, starts backup loop, loads plugins.
 // ═══════════════════════════════════════════════════
 
 import { Bot } from 'grammy';
 import { config, isOwner } from './config.js';
 import { ownerImmune, isBetrayalAttempt } from './core/middleware.js';
 import { loadPlugins } from './core/loader.js';
+import { startBackupLoop } from './core/backup.js';
 
 const bot = new Bot(config.botToken);
 
@@ -47,15 +48,10 @@ bot.command('start', async (ctx) => {
 });
 
 // ── Betrayal detection listener ──────────────────────
-// Name-trigger AI replies are handled by src/plugins/trigger.js.
-// This listener only handles the betrayal-attempt path.
 bot.on('message:text', async (ctx, next) => {
   const text = ctx.message.text;
-
-  // skip commands — they're handled by their own handlers
   if (text.startsWith('/')) return next();
 
-  // ── Betrayal detection — DM owner
   if (isBetrayalAttempt(text)) {
     try {
       await bot.api.sendMessage(
@@ -66,7 +62,6 @@ bot.on('message:text', async (ctx, next) => {
           `message: "${text}"`
       );
     } catch (_) {}
-    // let trigger.js decide whether to reply (if her name is also present)
     return next();
   }
 
@@ -77,6 +72,9 @@ bot.on('message:text', async (ctx, next) => {
 bot.catch((err) => {
   console.error('[YORU ERROR]', err);
 });
+
+// ── Start backup loop ────────────────────────────────
+startBackupLoop();
 
 // ── Load plugins ─────────────────────────────────────
 await loadPlugins(bot);
