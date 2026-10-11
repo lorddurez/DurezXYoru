@@ -5,13 +5,8 @@
 
 import { Bot } from 'grammy';
 import { config, isOwner } from './config.js';
-import {
-  ownerImmune,
-  mentionsYoru,
-  isBetrayalAttempt,
-} from './core/middleware.js';
+import { ownerImmune, isBetrayalAttempt } from './core/middleware.js';
 import { loadPlugins } from './core/loader.js';
-import { respond } from './ai/respond.js';
 
 const bot = new Bot(config.botToken);
 
@@ -51,15 +46,16 @@ bot.command('start', async (ctx) => {
   );
 });
 
-// ── Name trigger listener ────────────────────────────
-// If a message mentions Yoru by name (not a command), she wakes up.
+// ── Betrayal detection listener ──────────────────────
+// Name-trigger AI replies are handled by src/plugins/trigger.js.
+// This listener only handles the betrayal-attempt path.
 bot.on('message:text', async (ctx, next) => {
   const text = ctx.message.text;
 
   // skip commands — they're handled by their own handlers
   if (text.startsWith('/')) return next();
 
-  // ── Betrayal detection — DM owner, cold reply
+  // ── Betrayal detection — DM owner
   if (isBetrayalAttempt(text)) {
     try {
       await bot.api.sendMessage(
@@ -70,26 +66,8 @@ bot.on('message:text', async (ctx, next) => {
           `message: "${text}"`
       );
     } catch (_) {}
-
-    if (mentionsYoru(text)) {
-      return ctx.reply(`don't say that about ${config.ownerName}.`);
-    }
+    // let trigger.js decide whether to reply (if her name is also present)
     return next();
-  }
-
-  // ── Name trigger — real AI reply
-  if (mentionsYoru(text)) {
-    try {
-      const { text: replyText } = await respond(ctx, {
-        mood: config.defaultMood,
-      });
-      return ctx.reply(replyText, {
-        reply_to_message_id: ctx.message.message_id,
-      });
-    } catch (err) {
-      console.error('[TRIGGER] respond failed:', err.message);
-      return ctx.reply(`...`);
-    }
   }
 
   return next();
