@@ -1,0 +1,28 @@
+{
+  "name": "yoru-bot",
+  "version": "0.1.0",
+  "description": "Yoru — a human-feeling Telegram bot. Games, economy, AI chat, media, and more.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "grammy": "^1.30.0",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^11.3.0",
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "yoru",
+    "grammy"
+  ],
+  "author": "Durez",
+  "license": "MIT"
+}
