@@ -1,0 +1,41 @@
+# ═══════════════════════════════════════════════════
+# NEVER push these to GitHub
+# ═══════════════════════════════════════════════════
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Render / build artifacts
+dist/
+build/
+.cache/
+
+# Temporary
+tmp/
+temp/
